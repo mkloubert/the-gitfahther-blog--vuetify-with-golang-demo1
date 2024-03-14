@@ -38,7 +38,7 @@
       async SendText() {        
         const textToSend = String(this.textValue).substring(0, 4000).trim();
         if (textToSend === "") {
-          return;
+          return;  // not enough data
         }
 
         const voice = String(this.voice).toLowerCase().trim() || "alloy";
@@ -64,7 +64,7 @@
           audio.volume = 0.5;
           audio.play();
 
-          console.log('Playing audio');
+          console.log('Playing audio ...');
         } catch (error) {
           console.error('[ERROR]', 'SendText()', error)
         } finally {
