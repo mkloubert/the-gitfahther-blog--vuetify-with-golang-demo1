@@ -36,6 +36,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// storing the data of the POST request
 type TextToSpeechRequestBody struct {
 	Text  string `json:"text"`
 	Voice string `json:"voice"`
@@ -56,21 +57,24 @@ func main() {
 	router.HandleCORS.AllowOrigin = "*"
 	router.HandleCORS.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE"}
 
+	// POST endpoint "/"
 	router.POST("/", func(ctx *fasthttp.RequestCtx) {
 		sendError := func(err error) {
 			ctx.SetStatusCode(500)
 			ctx.WriteString(err.Error())
 		}
 
+		// read data from request
 		postBodyData := ctx.PostBody()
 
 		var postBody TextToSpeechRequestBody
 		err := json.Unmarshal(postBodyData, &postBody)
 		if err != nil {
-			sendError(err)
+			sendError(err) // parsing input as JSON failed
 			return
 		}
 
+		// setup request for OpenAI
 		requestBody := map[string]interface{}{
 			"model":           "tts-1",
 			"input":           postBody.Text,
@@ -80,39 +84,49 @@ func main() {
 
 		requestBodyData, err := json.Marshal(requestBody)
 		if err != nil {
-			sendError(err)
+			sendError(err) // could not create JSON string from `requestBody`
 			return
 		}
 
+		// start the request
 		request, err := http.NewRequest("POST", "https://api.openai.com/v1/audio/speech", bytes.NewBuffer(requestBodyData))
 		if err != nil {
-			sendError(err)
+			sendError(err) // failed
 			return
 		}
 
+		// setup headers like API key
 		request.Header.Set("Content-Type", "application/json")
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", OPENAI_API_KEY))
 
 		client := &http.Client{}
 		response, err := client.Do(request)
 		if err != nil {
-			sendError(err)
+			sendError(err) // could not doing the request
 			return
 		}
 
 		responseBodyData, err := io.ReadAll(response.Body)
 		if err != nil {
-			sendError(err)
+			sendError(err) // could not read the response
 			return
 		}
 
+		if response.StatusCode != 200 {
+			sendError(fmt.Errorf("unexpected response: %v", response.StatusCode))
+			return
+		}
+
+		// now prepare response data
+		// for returning as data URI
 		base64ResponseBodyData := base64.StdEncoding.EncodeToString(responseBodyData)
 		responseBodyDataURI := fmt.Sprintf("data:audio/ogg;base64,%s", base64ResponseBodyData)
+		responseBodyDataURIData := []byte(responseBodyDataURI)
 
-		ctx.SetStatusCode((response.StatusCode))
-		ctx.Response.Header.Add("Content-Length", fmt.Sprint(len(responseBodyData)))
+		ctx.SetStatusCode(200)
+		ctx.Response.Header.Add("Content-Length", fmt.Sprint(len(responseBodyDataURIData)))
 		ctx.Response.Header.Add("Content-Type", "text/plain; charset=UTF-8")
-		ctx.WriteString(responseBodyDataURI)
+		ctx.Write(responseBodyDataURIData)
 	})
 
 	fmt.Println("Server now listening on port", port, "...")
