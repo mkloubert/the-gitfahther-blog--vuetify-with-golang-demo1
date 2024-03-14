@@ -85,7 +85,13 @@
         <v-col cols="12">
           <h1>Text-to-speech demo</h1>
 
-          <v-textarea label="Your text" v-model="textValue" :maxlength="4000" counter></v-textarea>
+          <v-textarea
+            label="Your text"
+            v-model="textValue"
+            :maxlength="4000"
+            counter
+            rows="10"
+          ></v-textarea>
 
           <v-select
             label="Voice"
@@ -93,7 +99,13 @@
             v-model="voice"
           ></v-select>
 
-          <v-btn @click="SendText" size="x-large" block :disabled="isSendingText || textValue.trim() === ''">
+          <v-btn
+            @click="SendText"
+            size="x-large"
+            block
+            :disabled="isSendingText || textValue.trim() === ''"
+            variant="outlined"
+          >
             Read out text
           </v-btn>
         </v-col>
