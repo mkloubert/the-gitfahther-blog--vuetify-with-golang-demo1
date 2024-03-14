@@ -1,0 +1,29 @@
+services:
+  backend:
+    image: cosmtrek/air
+    working_dir: /go/src/app
+    env_file:
+      - ./.env
+      - ./backend/.env
+      - ./backend/.env.local
+    environment:
+      - GO111MODULE=on
+    ports:
+      - 4000:4000
+    volumes:
+      - ./backend:/go/src/app
+
+  frontend:
+    image: node:18-alpine
+    working_dir: /var/www/html/app/
+    command: >
+      sh -c "npm i && npm rebuild node-sass && npm run dev"
+    env_file:
+      - ./.env
+      - ./frontend/.env
+      - ./frontend/.env.local
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend:/var/www/html/app/
+    tty: true
